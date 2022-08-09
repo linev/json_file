@@ -87,7 +87,6 @@
 
 #include <memory>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -261,7 +260,7 @@ void TJSONFile::InitJsonFile(Bool_t create)
 
    if (create) {
 
-      fDoc = new nlohmann::json();
+      // fDoc = new nlohmann::json();
       // fDoc = fXML->NewDoc();
       // XMLNodePointer_t fRootNode = fXML->NewChild(nullptr, nullptr, xmlio::Root);
       // fXML->DocSetRootElement(fDoc, fRootNode);
@@ -292,10 +291,11 @@ void TJSONFile::InitJsonFile(Bool_t create)
 
 void TJSONFile::Close(Option_t *option)
 {
-   printf("Close %d\n", IsOpen());
+   printf("Close %d iswritable %d\n", IsOpen(), IsWritable());
 
-   if (!IsOpen())
-      return;
+   // FIXME: comment out for debugging only
+   //if (!IsOpen())
+   //   return;
 
    TString opt = option;
    if (opt.Length() > 0)
@@ -306,11 +306,9 @@ void TJSONFile::Close(Option_t *option)
 
    fWritable = kFALSE;
 
-   if (fDoc) {
-      delete (nlohmann::json *) fDoc;
-      // fXML->FreeDoc(fDoc);
-      fDoc = nullptr;
-   }
+   //if (fDoc) {
+   //   fDoc = nullptr;
+   //}
 
    if (fClassIndex) {
       delete fClassIndex;
@@ -359,7 +357,7 @@ TJSONFile::~TJSONFile()
 
 Bool_t TJSONFile::IsOpen() const
 {
-   return fDoc != nullptr;
+   return !fDoc.empty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -448,24 +446,22 @@ void TJSONFile::SaveToFile()
    if (gDebug > 0)
       Info("SaveToFile", "File: %s io %d", fRealName.Data(), GetIOVersion());
 
-   if (!fDoc)
-      return;
+   // if (fDoc.empty())
+   //   return;
 
-   auto &rootNode = *((nlohmann::json *) fDoc);
-
-   rootNode = nlohmann::json::object();
+   fDoc = nlohmann::json::object();
 
 //   if (GetIOVersion() > 1) {
 
       if (TestBit(TFile::kReproducible))
-         rootNode[jsonio::CreateTm] = TDatime((UInt_t) 1).AsSQLString();
+         fDoc[jsonio::CreateTm] = TDatime((UInt_t) 1).AsSQLString();
       else
-         rootNode[jsonio::CreateTm] = fDatimeC.AsSQLString();
+         fDoc[jsonio::CreateTm] = fDatimeC.AsSQLString();
 
       if (TestBit(TFile::kReproducible))
-         rootNode[jsonio::ModifyTm] = TDatime((UInt_t) 1).AsSQLString();
+         fDoc[jsonio::ModifyTm] = TDatime((UInt_t) 1).AsSQLString();
       else
-         rootNode[jsonio::ModifyTm] = fDatimeM.AsSQLString();
+         fDoc[jsonio::ModifyTm] = fDatimeM.AsSQLString();
 
       /*
 
@@ -506,7 +502,7 @@ void TJSONFile::SaveToFile()
    // save document
    {
       std::ofstream o(fname.Data());
-      o << std::setw(3) << rootNode << std::endl;
+      o << std::setw(3) << fDoc << std::endl;
    }
 
    // CombineNodesTree(this, fRootNode, kFALSE);
@@ -709,7 +705,7 @@ void TJSONFile::WriteStreamerInfo()
       infos_array.push_back(infonode);
    }
 
-   (*((nlohmann::json *) fDoc))["streamerinfos"] = infos_array;
+   fDoc["streamerinfos"] = infos_array;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

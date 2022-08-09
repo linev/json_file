@@ -15,6 +15,14 @@
 #include "Compression.h"
 #include <memory>
 
+#ifndef __CINT__
+#include <nlohmann/json.hpp>
+#else
+namespace nlohmann {
+   struct json {};
+}
+#endif
+
 class TKeyJSON;
 class TStreamerElement;
 class TStreamerInfo;
@@ -113,7 +121,7 @@ protected:
 
    static void ProduceFileNames(const char *filename, TString &fname);
 
-   void *fDoc{nullptr}; //! JSON document
+   nlohmann::json fDoc; //! JSON document
 
    void *fStreamerInfoNode{nullptr}; //!  pointer of node with streamer info data
 
